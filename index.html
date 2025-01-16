@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>近红外平均值计算</title>
+    <style>
+       .container {
+            display: flex;
+            justify-content: flex-start;
+            margin: 20px;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            margin: 10px;
+        }
+        textarea {
+            width: 420px;
+            height: 600px;
+            font-size: 18px; 
+            font-family: Times New Roman, Times, serif;
+            background-color: #f2f2f2;  /* 配置为浅灰色 */
+        }
+        label {
+            margin-bottom: 5px;
+        }
+        #button-group {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px;
+        }
+        #outputData {
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>近红外平均值计算</h1>
+    <div class="container">
+        <textarea id="inputData" rows="10" cols="30"></textarea>
+        <textarea id="outputData" rows="10" cols="30" readonly></textarea>
+    </div>
+    <br>
+    <button onclick="processData()"style="position: fixed; top: 160px;left: 920px; font-family: 黑体; font-weight:bold; font-size: 18px; padding: 10px 80px; border-radius: 5px; background-color: #000080; color: #ffffff; border: none;">计算结果</button>
+    <button onclick="copyOutputData()"style="position: fixed; top: 280px;left: 920px; font-family: 黑体; font-weight:bold; font-size: 18px; padding: 10px 80px; border-radius: 5px; background-color: #006400; color: #ffffff; border: none;">复制结果</button>
+    <button onclick="clearContents()"style="position: fixed; top: 400px;left: 920px; font-family: 黑体; font-weight:bold; font-size: 18px; padding: 10px 80px; border-radius: 5px; background-color: #FF4500; color: #ffffff; border: none;">清除内容</button>
+    <button onclick="restoreContents()"style="position: fixed; top: 520px;left: 920px; font-family: 黑体; font-weight:bold; font-size: 18px; padding: 10px 80px; border-radius: 5px; background-color: #8B0000; color: #ffffff; border: none;">恢复内容</button>
+
+    <script>
+        let previousInputData = "";
+        let previousOutputData = "";
+
+        function processData() {
+            const inputData = document.getElementById("inputData").value.trim();
+            const outputData = document.getElementById("outputData");
+
+            const lines = inputData.split("\n");
+            const header = lines.shift();
+            const data = lines.map(line => {
+                const [label, value1, value2] = line.split("\t");
+                return {label, value1: parseFloat(value1), value2: parseFloat(value2)};
+            });
+
+            const groupedData = data.reduce((acc, row) => {
+                if (!acc[row.label]) {
+                    acc[row.label] = {count: 0, sum1: 0, sum2: 0};
+                }
+                acc[row.label].count += 1;
+                acc[row.label].sum1 += row.value1;
+                acc[row.label].sum2 += row.value2;
+                return acc;
+            }, {});
+
+            const result = Object.entries(groupedData).map(([label, values]) => {
+                const avg1 = (values.sum1 / values.count).toFixed(8);
+                const avg2 = (values.sum2 / values.count).toFixed(8);
+                return `${label}\t${avg1}\t${avg2}`;
+            });
+
+            result.unshift(header);
+            outputData.value = result.join("\n");
+        }
+
+        function clearContents() {
+            const inputData = document.getElementById("inputData");
+            const outputData = document.getElementById("outputData");
+
+            previousInputData = inputData.value;
+            previousOutputData = outputData.value;
+
+            inputData.value = "";
+            outputData.value = "";
+        }
+
+        function restoreContents() {
+            document.getElementById("inputData").value = previousInputData;
+            document.getElementById("outputData").value = previousOutputData;
+        }
+
+        function copyOutputData() {
+            const outputData = document.getElementById("outputData");
+            outputData.select();
+            document.execCommand("copy");
+        }
+    </script>
+</body>
+</html>
