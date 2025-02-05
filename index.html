@@ -1,12 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- 原样保留头部内容 -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>近红外平均值计算</title>
     <style>
-        <!-- 原样保留样式内容 -->
         :root {
             --primary-color: #4CAF50;
             --secondary-color: #006400;
@@ -195,44 +193,27 @@
             const lines = inputData.split("\n");
             const header = lines.shift();
             const data = lines.map(line => {
-                const parts = line.split("\t");
-                const label = parts[0];
-                const values = parts.slice(1).map(value => parseFloat(value));
-                return {label, values};
+                const [label, value1, value2] = line.split("\t");
+                return {label, value1: parseFloat(value1), value2: parseFloat(value2)};
             });
 
-            // 动态获取所有列数
-            const columns = data.length > 0 ? data[0].values.length : 0;
+            const groupedData = data.reduce((acc, row) => {
+                if (!acc[row.label]) {
+                    acc[row.label] = {count: 0, sum1: 0, sum2: 0};
+                }
+                acc[row.label].count += 1;
+                acc[row.label].sum1 += row.value1;
+                acc[row.label].sum2 += row.value2;
+                return acc;
+            }, {});
 
-            // 初始化列数据
-            const columnData = Array.from({length: columns}, () => ({
-                count: 0,
-                sum: 0
-            }));
-
-            // 遍历所有数据，累加每列的总和和数量
-            data.forEach(row => {
-                row.values.forEach((value, index) => {
-                    columnData[index].count++;
-                    columnData[index].sum += value;
-                });
+            const result = Object.entries(groupedData).map(([label, values]) => {
+                const avg1 = (values.sum1 / values.count).toFixed(8);
+                const avg2 = (values.sum2 / values.count).toFixed(8);
+                return `${label}\t${avg1}\t${avg2}`;
             });
 
-            // 计算每列的平均值
-            const avgValues = columnData.map(col => {
-                if (col.count === 0) return 0;
-                return parseFloat((col.sum / col.count).toFixed(3)); // 保留三位有效数字
-            });
-
-            // 生成输出结果
-            const result = [header];
-            const uniqueLabels = [...new Set(data.map(row => row.label))];
-            uniqueLabels.forEach(label => {
-                const row = data.find(d => d.label === label);
-                const avgRow = [label].concat(avgValues);
-                result.push(avgRow.join("\t"));
-            });
-
+            result.unshift(header);
             outputData.value = result.join("\n");
         }
 
